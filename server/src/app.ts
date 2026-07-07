@@ -5,7 +5,7 @@ import { authPlugin } from './auth/plugin.js';
 import { auditPlugin } from './audit/plugin.js';
 import { authRoutes } from './auth/routes.js';
 import { registryRoutes } from './registry/routes.js';
-import { identityRoutes } from './identity/routes.js';
+import { identityRoutes, reviewQueueRoutes } from './identity/routes.js';
 import { referralRoutes } from './referrals/routes.js';
 import { alertRoutes } from './alerts/routes.js';
 
@@ -41,6 +41,7 @@ export async function buildApp(opts: BuildOptions = {}): Promise<FastifyInstance
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
   await app.register(registryRoutes, { prefix: '/api/v1/facilities' });
   await app.register(identityRoutes, { prefix: '/api/v1/patients' });
+  await app.register(reviewQueueRoutes, { prefix: '/api/v1/identity' });
   await app.register(referralRoutes, { prefix: '/api/v1/referrals' });
   await app.register(alertRoutes, { prefix: '/api/v1/alerts' });
 

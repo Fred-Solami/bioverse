@@ -219,7 +219,11 @@ export async function identityRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: 'provide a valid identifier or a name (min 2 chars)' });
     },
   );
+}
 
+// Identity match-review queue — mounted at /api/v1/identity (DESIGN.md §14),
+// deliberately separate from the /api/v1/patients surface.
+export async function reviewQueueRoutes(app: FastifyInstance): Promise<void> {
   // GET /identity/review-queue — borderline probabilistic matches awaiting a
   // human decision (DESIGN.md §14; in-charge/district).
   app.get(

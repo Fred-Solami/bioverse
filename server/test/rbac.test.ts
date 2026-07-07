@@ -87,6 +87,32 @@ describe('referral creation RBAC', () => {
   });
 });
 
+describe('identity review queue RBAC', () => {
+  it('requires authentication', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/identity/review-queue' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('forbids ordinary facility staff (403, proving the route is mounted)', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/identity/review-queue',
+      headers: auth({ role: 'FACILITY_STAFF' }),
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('rejects a decide with an invalid decision value', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/identity/review-queue/00000000-0000-0000-0000-0000000000cc/decide',
+      headers: auth({ role: 'FACILITY_INCHARGE' }),
+      payload: { decision: 'MAYBE' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+});
+
 describe('transition validation', () => {
   it('rejects an invalid to_status before touching the DB', async () => {
     const res = await app.inject({
