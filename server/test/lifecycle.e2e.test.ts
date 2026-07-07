@@ -471,13 +471,15 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     });
     expect(decide.statusCode).toBe(200);
 
-    const { rows } = await pool.query(
-      `SELECT patient_id, id_value FROM patient_identifiers
-        WHERE id_type = 'BIOVERSE_MPI' AND patient_id IN ($1, $2)`,
+    // The duplicate now points at the surviving record; the survivor is
+    // untouched. Reversible, non-destructive.
+    const { rows } = await pool.query<{ id: string; linked_to: string | null }>(
+      `SELECT id, linked_to FROM patients WHERE id IN ($1, $2)`,
       [origId, dupId],
     );
-    expect(rows).toHaveLength(2);
-    expect(new Set(rows.map((r) => r.id_value))).toEqual(new Set([origId])); // shared MPI
+    const byId = Object.fromEntries(rows.map((r) => [r.id, r.linked_to]));
+    expect(byId[dupId]).toBe(origId);
+    expect(byId[origId]).toBeNull();
 
     // Deciding again is a conflict.
     const again = await app.inject({

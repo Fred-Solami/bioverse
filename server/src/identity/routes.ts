@@ -296,18 +296,14 @@ export async function reviewQueueRoutes(app: FastifyInstance): Promise<void> {
         );
 
         if (decision === 'LINKED') {
-          // Record the link as a shared MPI (= the surviving candidate_b id)
-          // asserted on both records — a provenance-tracked, reversible link
-          // (is_active) rather than a destructive merge (DESIGN.md §11.3). Both
-          // records survive; the assertion declares them one person.
-          const mpi = review.candidate_b;
-          for (const patientId of [review.candidate_a, review.candidate_b]) {
-            await client.query(
-              `INSERT INTO patient_identifiers (patient_id, id_type, id_value, asserted_by)
-               VALUES ($1, 'BIOVERSE_MPI', $2, $3) ON CONFLICT DO NOTHING`,
-              [patientId, mpi, user.sub],
-            );
-          }
+          // The newer duplicate (candidate_a) points at the surviving record
+          // (candidate_b). Reversible (linked_to = NULL), non-destructive (both
+          // rows survive), provenance-tracked (DESIGN.md §11.3).
+          await client.query(
+            `UPDATE patients SET linked_to = $1, linked_at = now(), linked_by = $2
+              WHERE id = $3`,
+            [review.candidate_b, user.sub, review.candidate_a],
+          );
         }
         await client.query('COMMIT');
 

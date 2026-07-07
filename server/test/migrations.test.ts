@@ -27,6 +27,7 @@ describe('migrations', () => {
       '0008_refresh_tokens.sql', // v0.1: rotating refresh tokens (DESIGN.md §15)
       '0009_facility_external_ids.sql', // interop: MFL cross-system ids + provenance
       '0010_alerts.sql', // v0.2 escalation alerts
+      '0011_patient_links.sql', // v0.2 reversible identity links
     ]);
   });
 
