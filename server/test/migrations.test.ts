@@ -25,6 +25,7 @@ describe('migrations', () => {
       '0006_audit.sql',
       '0007_sync.sql',
       '0008_refresh_tokens.sql', // v0.1: rotating refresh tokens (DESIGN.md §15)
+      '0009_facility_external_ids.sql', // interop: MFL cross-system ids + provenance
     ]);
   });
 

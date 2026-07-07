@@ -6,7 +6,7 @@ raw external contract.
 
 | # | Adapter | Surface | Access status | Current implementation |
 |---|---|---|---|---|
-| 1 | `zhfr` | ZHFR RESTful API (live) | **Exists today** — auth/access terms to be verified | Not built yet. Dev seed data (`server/seed/`) stands in. Fallback: MOH-Zambia MFL GitHub data. |
+| 1 | `zhfr` | ZHFR RESTful API (live) | **Exists today** — auth/access terms to be verified | **MFL fallback built** (`server/src/interop/zhfr/`): `npm run seed:mfl` seeds/refreshes real facilities from MOH-Zambia MFL GitHub CSV (contract confirmed 2026-07-07), carrying DHIS2 UID / SmartCare GUID / eLMIS ID cross-system keys, `source='MFL_GITHUB'`, `source_synced_at` freshness stamp. ZHFR API upgrade path pending access terms. |
 | 2 | `dhis2` | DHIS2 Web API `dataValueSets` (ADX) | Documented, standard | Not built (v0.4). Monthly aggregate referral indicators only — no patient data, lowest governance barrier. Test against a DHIS2 dev/play instance. |
 | 3 | `smartcare` | SmartCare HIE bus (FHIR/HL7/JSON/XML) | Governance-gated via MoH ICT / Digital Health TWG | Not built. FHIR client (`Patient`, `ServiceRequest`, `Encounter`) to be ready and stubbed until access is granted. |
 | 4 | `elmis` | Via the same HIE | Governance-gated | Not built. Stock snapshot reader; `facility_stock_snapshot.source = 'STUB'` until live. |

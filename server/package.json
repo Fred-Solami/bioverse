@@ -14,6 +14,7 @@
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts",
     "seed:users": "tsx src/seedUsers.ts",
+    "seed:mfl": "tsx src/interop/zhfr/seedFromMfl.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
