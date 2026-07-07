@@ -263,7 +263,7 @@ POST   /api/v1/referrals/:id/transition           {to_status, note, payload, eve
 GET    /api/v1/referrals/:id/match                (ranked candidates: capable+stocked)
 GET    /api/v1/facilities?district=&capability=
 POST   /api/v1/patients                           (runs matching cascade; may return existing)
-GET    /api/v1/patients/search?identifier=&name=  (audited)
+POST   /api/v1/patients/search                    (audited; body {identifier,name})
 GET    /api/v1/identity/review-queue              (in-charge/district)
 POST   /api/v1/identity/review-queue/:id/decide   {LINKED|REJECTED}
 GET    /api/v1/dashboard/facility/:id
@@ -272,7 +272,7 @@ POST   /api/v1/sync/push        GET /api/v1/sync/pull?since=
 POST   /internal/interop/dhis2/export             (scheduled)
 POST   /internal/interop/zhfr/refresh             (scheduled)
 ```
-All endpoints JWT-authenticated; RBAC-scoped; patient-touching routes write `audit_log` via central middleware (enforced, not per-handler discipline).
+All endpoints JWT-authenticated; RBAC-scoped; patient-touching routes write `audit_log` via central middleware (enforced, not per-handler discipline). *Patient search is POST, not GET: identifiers and names are PII and §15 forbids PII in URLs/logs.*
 ## 15. Security & compliance checklist (v0.1 gate)
 - [ ] Argon2id; 15-min JWT access; rotating refresh; logout revocation
 - [ ] RBAC matrix implemented and tested per role (CHW → MOH_ADMIN)

@@ -15,6 +15,7 @@
     "seed": "tsx src/seed.ts",
     "seed:users": "tsx src/seedUsers.ts",
     "seed:mfl": "tsx src/interop/zhfr/seedFromMfl.ts",
+    "fhir:samples": "tsx src/interop/fhir/emitSamples.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

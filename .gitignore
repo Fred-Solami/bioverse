@@ -7,3 +7,7 @@ dist/
 .DS_Store
 coverage/
 .claude/settings.local.json
+
+# Step 3 FHIR conformance artifacts (generated in CI)
+fhir-samples/
+validator_cli.jar

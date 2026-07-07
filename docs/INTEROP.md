@@ -25,6 +25,38 @@ Every piece of externally-sourced data carries an explicit freshness tag
 hidden. A clinician choosing a destination facility sees not just "oxytocin:
 ADEQUATE" but how old that answer is.
 
+## FHIR conformance spec (Step 3)
+
+Compatibility = conformance to the standards Zambia's IAF already chose, not a
+new contract. BioVerse's internal schema is unchanged; a thin edge layer
+(`server/src/interop/fhir/`) emits FHIR R4 resources per the OpenHIE profiles.
+
+| Function | OpenHIE profile / standard | BioVerse resource | Prove against |
+|---|---|---|---|
+| Patient identity | PIX / PDQm / PMIR | `Patient` | HL7 validator; `hapi.fhir.org` |
+| Facility registry | mCSD | `Organization` + `Location` | HL7 validator |
+| Referral / coordination | ServiceRequest + Task workflow | `ServiceRequest` + `Task` | HL7 validator |
+| Terminology | SVCM | coded `CodeableConcept` | value-set validation |
+| Aggregate reporting | ADX (IHE) | DHIS2 `dataValueSets` (v0.4) | `play.dhis2.org` |
+
+**Enforced in CI:** the `fhir-conformance` job emits sample resources from the
+mappers and validates them against FHIR R4 with HL7's official `validator_cli`.
+A mapper drifting out of conformance fails the build.
+
+**Namespace:** system URIs use a provisional URN base (`urn:bioverse:…`, one
+constant in `terminology/valueSets.ts`) because a system URI must be one we
+control and no domain is registered yet. Swap for the canonical https base when
+a domain exists. DHIS2/SmartCare/eLMIS identifier systems are provisional until
+the IAF/TWG specifies the authoritative ones.
+
+**Terminology decision log:** `maternal_danger_signs` and `facility_capabilities`
+are BioVerse-local code systems (`terminology/valueSets.ts`). Mapping each
+concept to SNOMED CT / ICD-11 is a deliberate clinical-review task carried
+structurally by an optional `snomed` field — a wrong clinical code is worse than
+an unmapped local one. The capability vocabulary is shared by facility
+`capabilities` and referral `required_capabilities` so the v0.2 match endpoint
+has no vocabulary mismatch.
+
 ## Identity mapping
 
 BioVerse's client registry follows the OpenHIE Client Registry pattern and is

@@ -3,6 +3,7 @@ import { pool } from '../db.js';
 import { CAN_CREATE_REFERRAL, hasOversight } from '../auth/roles.js';
 import type { AuthUser } from '../auth/plugin.js';
 import { checkTransition, isStatus, type Status } from './stateMachine.js';
+import { isCapability, isDangerSign, validateCodes } from '../terminology/valueSets.js';
 
 interface CreateBody {
   patient_id?: string;
@@ -93,6 +94,18 @@ export async function referralRoutes(app: FastifyInstance): Promise<void> {
       }
       if (!PRIORITIES.includes(b.priority)) {
         return reply.code(400).send({ error: `priority must be one of ${PRIORITIES.join(', ')}` });
+      }
+
+      // Clinical data must be coded, not free text (docs/PLAN.md Step 3). Reject
+      // off-vocabulary codes with a precise message rather than silently storing
+      // strings that no downstream FHIR consumer can interpret.
+      const signs = validateCodes(b.danger_signs, isDangerSign);
+      if (signs.unknown.length) {
+        return reply.code(400).send({ error: `unknown danger_signs: ${signs.unknown.join(', ')}` });
+      }
+      const caps = validateCodes(b.required_capabilities, isCapability);
+      if (caps.unknown.length) {
+        return reply.code(400).send({ error: `unknown required_capabilities: ${caps.unknown.join(', ')}` });
       }
       // Non-oversight users may only refer from their own facility.
       if (!hasOversight(user.role) && fromFacilityId !== user.facilityId) {

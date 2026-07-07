@@ -51,3 +51,40 @@ jobs:
 
       - name: Unit, inject, and lifecycle tests
         run: npm test
+
+  # Authoritative FHIR R4 conformance: the resources BioVerse emits to the HIE
+  # are validated against the spec by HL7's official validator (docs/PLAN.md
+  # Step 3). If a mapper drifts out of conformance, this job goes red.
+  fhir-conformance:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Emit sample FHIR resources from the mappers
+        run: npm run fhir:samples -- ./fhir-samples
+
+      - name: Download HL7 FHIR validator
+        run: curl -sL -o validator_cli.jar https://github.com/hapifhir/org.hl7.fhir.core/releases/latest/download/validator_cli.jar
+
+      # -tx n/a: validate structure offline. Local code systems (bioverse.zm)
+      # can't be checked against a terminology server and would only produce
+      # informational notes; structural non-conformance still fails the run.
+      - name: Validate against FHIR R4
+        run: java -jar validator_cli.jar fhir-samples -version 4.0 -tx n/a

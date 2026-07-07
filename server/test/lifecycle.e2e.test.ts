@@ -163,8 +163,8 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
         patient_id: patientId,
         reason: 'PPH — heavy bleeding after delivery',
         priority: 'EMERGENCY',
-        danger_signs: ['bleeding'],
-        required_capabilities: ['blood_bank', 'caesarean_section'],
+        danger_signs: ['vaginal_bleeding'],
+        required_capabilities: ['blood_transfusion', 'caesarean_section'],
         event_id: randomUUID(),
       },
     });
@@ -174,6 +174,22 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     expect(body.referral.reference).toMatch(/^REF-\d{4}-\d{6}$/);
     expect(body.referral.current_status).toBe('INITIATED');
     expect(body.events).toHaveLength(1);
+  });
+
+  it('rejects off-vocabulary clinical codes', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/referrals',
+      headers: auth(staffA),
+      payload: {
+        patient_id: patientId,
+        reason: 'test',
+        priority: 'ROUTINE',
+        danger_signs: ['made_up_sign'],
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toContain('made_up_sign');
   });
 
   it('walks the full lifecycle with the right facility on each side', async () => {
