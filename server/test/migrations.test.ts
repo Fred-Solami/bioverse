@@ -15,7 +15,7 @@ describe('migrations', () => {
     expect(numbers).toEqual(numbers.map((_, i) => i + 1));
   });
 
-  it('cover the seven authoritative DDL files from DESIGN.md §9', () => {
+  it('cover the DESIGN.md §9 DDL plus the v0.1 auth additions', () => {
     expect(files).toEqual([
       '0001_facilities.sql',
       '0002_users.sql',
@@ -24,6 +24,7 @@ describe('migrations', () => {
       '0005_stock.sql',
       '0006_audit.sql',
       '0007_sync.sql',
+      '0008_refresh_tokens.sql', // v0.1: rotating refresh tokens (DESIGN.md §15)
     ]);
   });
 
