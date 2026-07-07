@@ -4,6 +4,7 @@ import { CAN_CREATE_REFERRAL, hasOversight } from '../auth/roles.js';
 import type { AuthUser } from '../auth/plugin.js';
 import { checkTransition, isStatus, type Status } from './stateMachine.js';
 import { isCapability, isDangerSign, validateCodes } from '../terminology/valueSets.js';
+import { rankCandidates, type Candidate } from './matching.js';
 
 interface CreateBody {
   patient_id?: string;
@@ -358,6 +359,87 @@ export async function referralRoutes(app: FastifyInstance): Promise<void> {
       } finally {
         client.release();
       }
+    },
+  );
+
+  // GET /referrals/:id/match — ranked candidate receiving facilities
+  // (DESIGN.md §10). Capability filter + distance are computed in PostGIS; the
+  // downrank/selection policy is applied by the pure ranker. Returns capable
+  // facilities even when stock is CRITICAL — annotated, never hidden.
+  app.get<{ Params: { id: string } }>(
+    '/:id/match',
+    {
+      preHandler: [app.authenticate],
+      config: { audit: { action: 'READ', entityType: 'referral' } },
+    },
+    async (req, reply) => {
+      const user = req.authUser!;
+      const { rows: refRows } = await pool.query<{
+        from_facility_id: string;
+        from_district: string | null;
+        priority: string;
+        required_capabilities: string[];
+        has_location: boolean;
+      }>(
+        `SELECT r.from_facility_id, ff.district AS from_district, r.priority,
+                r.required_capabilities,
+                (ff.location IS NOT NULL) AS has_location
+           FROM referrals r
+           JOIN facilities ff ON ff.id = r.from_facility_id
+          WHERE r.id = $1`,
+        [req.params.id],
+      );
+      const ref = refRows[0];
+      if (!ref) return reply.code(404).send({ error: 'not found' });
+
+      // Visibility: facility staff only match their own referrals; district
+      // officers within their district; MOH anywhere.
+      const visible =
+        user.role === 'MOH_ADMIN' ||
+        (user.role === 'DISTRICT_OFFICER' && user.district === ref.from_district) ||
+        user.facilityId === ref.from_facility_id;
+      if (!visible) return reply.code(404).send({ error: 'not found' });
+
+      // Capability filter (@> against a {cap:true} object) + distance, bounded
+      // to the nearest 25 before the pure ranker takes the top 5.
+      const { rows } = await pool.query<Candidate>(
+        `WITH ref AS (
+           SELECT r.from_facility_id, ff.location AS from_location,
+             CASE WHEN r.required_capabilities = '[]'::jsonb THEN '{}'::jsonb
+                  ELSE (SELECT jsonb_object_agg(value, true)
+                          FROM jsonb_array_elements_text(r.required_capabilities))
+             END AS req_obj
+           FROM referrals r JOIN facilities ff ON ff.id = r.from_facility_id
+          WHERE r.id = $1
+         )
+         SELECT f.id AS facility_id, f.name, f.facility_type, f.district,
+           CASE WHEN f.location IS NOT NULL AND ref.from_location IS NOT NULL
+                THEN ST_Distance(f.location, ref.from_location) END AS distance_m,
+           COALESCE((
+             SELECT CASE WHEN bool_or(s.status = 'CRITICAL') THEN 'CRITICAL'
+                         WHEN bool_or(s.status = 'UNKNOWN')  THEN 'UNKNOWN'
+                         WHEN bool_or(s.status = 'SURPLUS')  THEN 'SURPLUS'
+                         ELSE 'ADEQUATE' END
+               FROM facility_stock_snapshot s WHERE s.facility_id = f.id
+           ), 'UNKNOWN') AS stock_status,
+           f.capabilities
+         FROM facilities f, ref
+         WHERE f.is_active
+           AND f.id <> ref.from_facility_id
+           AND f.capabilities @> ref.req_obj
+         ORDER BY distance_m NULLS LAST
+         LIMIT 25`,
+        [req.params.id],
+      );
+
+      const candidates = rankCandidates(rows, { priority: ref.priority });
+      req.auditContext = { entityId: req.params.id, detail: { candidates: candidates.length } };
+      return reply.send({
+        referral_id: req.params.id,
+        required_capabilities: ref.required_capabilities,
+        count: candidates.length,
+        candidates,
+      });
     },
   );
 }

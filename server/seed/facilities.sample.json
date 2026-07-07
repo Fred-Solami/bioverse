@@ -8,7 +8,7 @@
     "province": "Copperbelt",
     "longitude": 28.4342,
     "latitude": -13.3015,
-    "capabilities": { "emonc": true, "csection": true, "blood_bank": true, "maternity": true, "ambulance": true }
+    "capabilities": { "emergency_obstetric_care": true, "caesarean_section": true, "blood_transfusion": true, "inpatient_maternity": true }
   },
   {
     "zhfr_code": "DEV-CB-0002",
@@ -19,7 +19,7 @@
     "province": "Copperbelt",
     "longitude": 28.6366,
     "latitude": -12.9724,
-    "capabilities": { "emonc": true, "csection": true, "blood_bank": true, "maternity": true, "icu": true, "ambulance": true }
+    "capabilities": { "emergency_obstetric_care": true, "caesarean_section": true, "blood_transfusion": true, "inpatient_maternity": true, "neonatal_intensive_care": true }
   },
   {
     "zhfr_code": "DEV-CB-0003",
@@ -30,7 +30,7 @@
     "province": "Copperbelt",
     "longitude": 28.1417,
     "latitude": -13.2381,
-    "capabilities": { "emonc": true, "csection": true, "blood_bank": false, "maternity": true }
+    "capabilities": { "emergency_obstetric_care": true, "caesarean_section": true, "inpatient_maternity": true }
   },
   {
     "zhfr_code": "DEV-CB-0010",
@@ -41,7 +41,7 @@
     "province": "Copperbelt",
     "longitude": 28.5210,
     "latitude": -13.2504,
-    "capabilities": { "maternity": true, "bemonc": true }
+    "capabilities": { "parenteral_antibiotics": true, "parenteral_uterotonics": true, "parenteral_anticonvulsants": true, "inpatient_maternity": true }
   },
   {
     "zhfr_code": "DEV-CB-0011",
@@ -52,7 +52,7 @@
     "province": "Copperbelt",
     "longitude": 28.3711,
     "latitude": -13.1189,
-    "capabilities": { "maternity": true, "bemonc": true }
+    "capabilities": { "parenteral_antibiotics": true, "parenteral_uterotonics": true, "parenteral_anticonvulsants": true, "inpatient_maternity": true }
   },
   {
     "zhfr_code": "DEV-CB-0012",
@@ -63,7 +63,7 @@
     "province": "Copperbelt",
     "longitude": 28.5527,
     "latitude": -13.0838,
-    "capabilities": { "maternity": true }
+    "capabilities": { "inpatient_maternity": true }
   },
   {
     "zhfr_code": "DEV-CB-0013",
@@ -74,7 +74,7 @@
     "province": "Copperbelt",
     "longitude": 28.6015,
     "latitude": -13.0212,
-    "capabilities": { "maternity": true }
+    "capabilities": { "inpatient_maternity": true }
   },
   {
     "zhfr_code": "DEV-CB-0014",
@@ -85,7 +85,7 @@
     "province": "Copperbelt",
     "longitude": 28.3168,
     "latitude": -13.4327,
-    "capabilities": { "maternity": true }
+    "capabilities": { "inpatient_maternity": true }
   },
   {
     "zhfr_code": "DEV-CB-0020",
@@ -173,6 +173,6 @@
     "province": "Copperbelt",
     "longitude": 28.5852,
     "latitude": -13.0290,
-    "capabilities": { "maternity": true, "bemonc": true }
+    "capabilities": { "parenteral_antibiotics": true, "parenteral_uterotonics": true, "parenteral_anticonvulsants": true, "inpatient_maternity": true }
   }
 ]

@@ -192,6 +192,42 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     expect(res.json().error).toContain('made_up_sign');
   });
 
+  it('suggests capable facilities ranked by distance (the v0.2 match)', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/v1/referrals',
+      headers: auth(staffA),
+      payload: {
+        patient_id: patientId,
+        reason: 'PPH requiring surgical + transfusion capacity',
+        priority: 'EMERGENCY',
+        required_capabilities: ['blood_transfusion', 'caesarean_section'],
+      },
+    });
+    const rid = create.json().referral.id;
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/referrals/${rid}/match`,
+      headers: auth(staffA),
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const body = res.json();
+    const names = body.candidates.map((c: { name: string }) => c.name);
+
+    // Only facilities with BOTH capabilities qualify: the two full hospitals.
+    expect(names).toContain('Masaiti District Hospital');
+    expect(names).toContain('Ndola Teaching Hospital');
+    // St. Theresa has caesarean but no blood transfusion → filtered out.
+    expect(names).not.toContain('St. Theresa Mission Hospital (Ibenga)');
+    // No health posts / maternity-only centres.
+    expect(body.candidates.every((c: { facility_type: string }) => c.facility_type !== 'HEALTH_POST')).toBe(true);
+    // Emergency pre-selects the nearest capable facility, with stock annotated.
+    expect(body.candidates[0].recommended).toBe(true);
+    expect(body.candidates[0].stock_status).toBeTruthy();
+    expect(typeof body.candidates[0].distance_m).toBe('number');
+  });
+
   it('walks the full lifecycle with the right facility on each side', async () => {
     // Referrer side: match to facility B, dispatch, transit.
     let res = await transition(staffA, referralId, 'MATCHED', {
