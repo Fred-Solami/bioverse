@@ -32,6 +32,14 @@ export const CAN_TOUCH_PATIENTS: readonly Role[] = [
   'MOH_ADMIN',
 ];
 
+// Roles that may decide identity match-review-queue entries (DESIGN.md §14:
+// in-charge / district).
+export const CAN_REVIEW_IDENTITY: readonly Role[] = [
+  'FACILITY_INCHARGE',
+  'DISTRICT_OFFICER',
+  'MOH_ADMIN',
+];
+
 // Roles with cross-facility oversight: exempt from the facility-side check on
 // referral transitions (they still obey the state-machine allow-list).
 export const OVERSIGHT_ROLES: readonly Role[] = ['DISTRICT_OFFICER', 'MOH_ADMIN'];

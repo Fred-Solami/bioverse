@@ -83,6 +83,7 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
   let staffB: Session;
   let district: Session;
   let admin: Session;
+  let incharge: Session;
   let patientId: string;
   let referralId: string;
 
@@ -97,6 +98,7 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     staffB = await login('staff.b');
     district = await login('district');
     admin = await login('admin');
+    incharge = await login('incharge.a');
     expect(staffA.facilityId).not.toBe(staffB.facilityId);
   }, 60_000);
 
@@ -401,6 +403,90 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     expect(
       open.json().alerts.find((a: { id: string }) => a.id === alert.id),
     ).toBeUndefined();
+  });
+
+  it('routes a borderline duplicate to the review queue and links on decision', async () => {
+    // Original patient, no identifiers so the deterministic stage can't catch a
+    // later near-duplicate.
+    const orig = await app.inject({
+      method: 'POST',
+      url: '/api/v1/patients',
+      headers: auth(staffA),
+      payload: {
+        given_name: 'Bwalya',
+        family_name: 'Chibesakunda',
+        sex: 'M',
+        birth_date: '1985-06-01',
+        district: 'Kabwe',
+      },
+    });
+    expect(orig.statusCode).toBe(201);
+    expect(orig.json().review_pending).toBe(false);
+    const origId = orig.json().patient.id;
+
+    // Near-duplicate: same names/sex but different district and no birth date →
+    // scores into the review band, not auto-link.
+    const dup = await app.inject({
+      method: 'POST',
+      url: '/api/v1/patients',
+      headers: auth(staffB),
+      payload: {
+        given_name: 'Bwalya',
+        family_name: 'Chibesakunda',
+        sex: 'M',
+        district: 'Ndola',
+      },
+    });
+    expect(dup.statusCode).toBe(201);
+    expect(dup.json().review_pending).toBe(true);
+    const dupId = dup.json().patient.id;
+
+    // In-charge sees the pending review; ordinary facility staff cannot.
+    const forbidden = await app.inject({
+      method: 'GET',
+      url: '/api/v1/identity/review-queue',
+      headers: auth(staffA),
+    });
+    expect(forbidden.statusCode).toBe(403);
+
+    const queue = await app.inject({
+      method: 'GET',
+      url: '/api/v1/identity/review-queue',
+      headers: auth(incharge),
+    });
+    expect(queue.statusCode).toBe(200);
+    const review = queue.json().reviews.find(
+      (r: { a_id: string; b_id: string }) => r.a_id === dupId && r.b_id === origId,
+    );
+    expect(review).toBeDefined();
+    expect(Number(review.score)).toBeGreaterThanOrEqual(0.6);
+    expect(Number(review.score)).toBeLessThan(0.85);
+
+    // Link them; a reversible shared MPI is asserted on both records.
+    const decide = await app.inject({
+      method: 'POST',
+      url: `/api/v1/identity/review-queue/${review.id}/decide`,
+      headers: auth(incharge),
+      payload: { decision: 'LINKED' },
+    });
+    expect(decide.statusCode).toBe(200);
+
+    const { rows } = await pool.query(
+      `SELECT patient_id, id_value FROM patient_identifiers
+        WHERE id_type = 'BIOVERSE_MPI' AND patient_id IN ($1, $2)`,
+      [origId, dupId],
+    );
+    expect(rows).toHaveLength(2);
+    expect(new Set(rows.map((r) => r.id_value))).toEqual(new Set([origId])); // shared MPI
+
+    // Deciding again is a conflict.
+    const again = await app.inject({
+      method: 'POST',
+      url: `/api/v1/identity/review-queue/${review.id}/decide`,
+      headers: auth(incharge),
+      payload: { decision: 'REJECTED' },
+    });
+    expect(again.statusCode).toBe(409);
   });
 
   it('rotates refresh tokens and revokes on logout', async () => {
