@@ -1,0 +1,178 @@
+[
+  {
+    "zhfr_code": "DEV-CB-0001",
+    "name": "Masaiti District Hospital",
+    "facility_type": "L1_HOSPITAL",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.4342,
+    "latitude": -13.3015,
+    "capabilities": { "emonc": true, "csection": true, "blood_bank": true, "maternity": true, "ambulance": true }
+  },
+  {
+    "zhfr_code": "DEV-CB-0002",
+    "name": "Ndola Teaching Hospital",
+    "facility_type": "L3_HOSPITAL",
+    "ownership": "MOH",
+    "district": "Ndola",
+    "province": "Copperbelt",
+    "longitude": 28.6366,
+    "latitude": -12.9724,
+    "capabilities": { "emonc": true, "csection": true, "blood_bank": true, "maternity": true, "icu": true, "ambulance": true }
+  },
+  {
+    "zhfr_code": "DEV-CB-0003",
+    "name": "St. Theresa Mission Hospital (Ibenga)",
+    "facility_type": "L1_HOSPITAL",
+    "ownership": "FAITH_BASED",
+    "district": "Mpongwe",
+    "province": "Copperbelt",
+    "longitude": 28.1417,
+    "latitude": -13.2381,
+    "capabilities": { "emonc": true, "csection": true, "blood_bank": false, "maternity": true }
+  },
+  {
+    "zhfr_code": "DEV-CB-0010",
+    "name": "Kafulafuta Rural Health Centre",
+    "facility_type": "HEALTH_CENTRE",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.5210,
+    "latitude": -13.2504,
+    "capabilities": { "maternity": true, "bemonc": true }
+  },
+  {
+    "zhfr_code": "DEV-CB-0011",
+    "name": "Fiwale Hill Rural Health Centre",
+    "facility_type": "HEALTH_CENTRE",
+    "ownership": "FAITH_BASED",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.3711,
+    "latitude": -13.1189,
+    "capabilities": { "maternity": true, "bemonc": true }
+  },
+  {
+    "zhfr_code": "DEV-CB-0012",
+    "name": "Chondwe Rural Health Centre",
+    "facility_type": "HEALTH_CENTRE",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.5527,
+    "latitude": -13.0838,
+    "capabilities": { "maternity": true }
+  },
+  {
+    "zhfr_code": "DEV-CB-0013",
+    "name": "Mishikishi Rural Health Centre",
+    "facility_type": "HEALTH_CENTRE",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.6015,
+    "latitude": -13.0212,
+    "capabilities": { "maternity": true }
+  },
+  {
+    "zhfr_code": "DEV-CB-0014",
+    "name": "Kashiba Rural Health Centre",
+    "facility_type": "HEALTH_CENTRE",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.3168,
+    "latitude": -13.4327,
+    "capabilities": { "maternity": true }
+  },
+  {
+    "zhfr_code": "DEV-CB-0020",
+    "name": "Chembe Health Post",
+    "facility_type": "HEALTH_POST",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.2603,
+    "latitude": -13.1855,
+    "capabilities": {}
+  },
+  {
+    "zhfr_code": "DEV-CB-0021",
+    "name": "Munkulungwe Health Post",
+    "facility_type": "HEALTH_POST",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.4890,
+    "latitude": -13.1502,
+    "capabilities": {}
+  },
+  {
+    "zhfr_code": "DEV-CB-0022",
+    "name": "Kaloko Health Post",
+    "facility_type": "HEALTH_POST",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.3454,
+    "latitude": -13.3562,
+    "capabilities": {}
+  },
+  {
+    "zhfr_code": "DEV-CB-0023",
+    "name": "Musangashi Health Post",
+    "facility_type": "HEALTH_POST",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.6539,
+    "latitude": -13.3170,
+    "capabilities": {}
+  },
+  {
+    "zhfr_code": "DEV-CB-0024",
+    "name": "Chatukuta Health Post",
+    "facility_type": "HEALTH_POST",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.4076,
+    "latitude": -13.4718,
+    "capabilities": {}
+  },
+  {
+    "zhfr_code": "DEV-CB-0025",
+    "name": "Kapula Health Post",
+    "facility_type": "HEALTH_POST",
+    "ownership": "MOH",
+    "district": "Masaiti",
+    "province": "Copperbelt",
+    "longitude": 28.2911,
+    "latitude": -13.0764,
+    "capabilities": {}
+  },
+  {
+    "zhfr_code": "DEV-CB-0026",
+    "name": "Shimukunami Health Post",
+    "facility_type": "HEALTH_POST",
+    "ownership": "MOH",
+    "district": "Lufwanyama",
+    "province": "Copperbelt",
+    "longitude": 27.9581,
+    "latitude": -12.9312,
+    "capabilities": {}
+  },
+  {
+    "zhfr_code": "DEV-CB-0030",
+    "name": "Twapia Urban Health Centre",
+    "facility_type": "HEALTH_CENTRE",
+    "ownership": "MOH",
+    "district": "Ndola",
+    "province": "Copperbelt",
+    "longitude": 28.5852,
+    "latitude": -13.0290,
+    "capabilities": { "maternity": true, "bemonc": true }
+  }
+]
