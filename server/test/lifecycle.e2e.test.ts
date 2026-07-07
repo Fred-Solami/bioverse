@@ -6,6 +6,7 @@ import { migrate } from '../src/migrate.js';
 import { seedFacilities } from '../src/seed.js';
 import { seedUsers } from '../src/seedUsers.js';
 import { pool, closePool } from '../src/db.js';
+import { scanAndRaise } from '../src/referrals/escalationWorker.js';
 
 // The v0.1 exit criterion (DESIGN.md §17): "two seeded facilities complete a
 // full referral lifecycle via API". Needs a PostGIS-capable Postgres, which the
@@ -335,6 +336,71 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
       method: 'GET', url: '/api/v1/referrals?status=CLOSED', headers: auth(admin),
     });
     expect(asAdmin.json().referrals.some((r: { id: string }) => r.id === referralId)).toBe(true);
+  });
+
+  it('escalates an unmatched emergency and routes the alert to the district', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/v1/referrals',
+      headers: auth(staffA),
+      payload: {
+        patient_id: patientId,
+        reason: 'Eclampsia — convulsing, needs urgent transfer',
+        priority: 'EMERGENCY',
+        danger_signs: ['convulsions'],
+      },
+    });
+    const rid = create.json().referral.id;
+
+    // Scan as if 20 minutes have passed with the referral still INITIATED.
+    const later = new Date(Date.now() + 20 * 60_000);
+    const raised = await scanAndRaise(later);
+    expect(raised).toBeGreaterThan(0);
+
+    // The district officer receives the CRITICAL alert.
+    const list = await app.inject({
+      method: 'GET',
+      url: '/api/v1/alerts?status=OPEN',
+      headers: auth(district),
+    });
+    expect(list.statusCode).toBe(200);
+    const alert = list.json().alerts.find(
+      (a: { referral_id: string; alert_type: string }) =>
+        a.referral_id === rid && a.alert_type === 'EMERGENCY_UNMATCHED',
+    );
+    expect(alert).toBeDefined();
+    expect(alert.severity).toBe('CRITICAL');
+
+    // A facility not involved does not see a district-scoped alert.
+    const bList = await app.inject({
+      method: 'GET',
+      url: '/api/v1/alerts',
+      headers: auth(staffB),
+    });
+    expect(
+      bList.json().alerts.find((a: { referral_id: string }) => a.referral_id === rid),
+    ).toBeUndefined();
+
+    // Idempotent: re-scanning raises no duplicate.
+    const raisedAgain = await scanAndRaise(new Date(later.getTime() + 60_000));
+    const before = raised;
+    expect(raisedAgain).toBeLessThan(before + 1); // no new EMERGENCY_UNMATCHED for rid
+
+    // The district acknowledges it; it leaves the OPEN queue.
+    const ack = await app.inject({
+      method: 'POST',
+      url: `/api/v1/alerts/${alert.id}/ack`,
+      headers: auth(district),
+    });
+    expect(ack.statusCode).toBe(200);
+    const open = await app.inject({
+      method: 'GET',
+      url: '/api/v1/alerts?status=OPEN',
+      headers: auth(district),
+    });
+    expect(
+      open.json().alerts.find((a: { id: string }) => a.id === alert.id),
+    ).toBeUndefined();
   });
 
   it('rotates refresh tokens and revokes on logout', async () => {
