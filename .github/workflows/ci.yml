@@ -52,6 +52,27 @@ jobs:
       - name: Unit, inject, and lifecycle tests
         run: npm test
 
+  # Facility PWA (v0.3): typecheck + production build (which generates the
+  # service worker). Playwright offline e2e is added in Slice 6 (docs/PWA-PLAN.md).
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client-facility
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client-facility/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build (generates service worker)
+        run: npm run build
+
   # Authoritative FHIR R4 conformance: the resources BioVerse emits to the HIE
   # are validated against the spec by HL7's official validator (docs/PLAN.md
   # Step 3). If a mapper drifts out of conformance, this job goes red.

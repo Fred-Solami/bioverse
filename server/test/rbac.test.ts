@@ -113,6 +113,26 @@ describe('identity review queue RBAC', () => {
   });
 });
 
+describe('terminology endpoint', () => {
+  it('requires authentication', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/terminology' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('returns the coded value sets to an authenticated user', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/terminology',
+      headers: auth({ role: 'FACILITY_STAFF' }),
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(Array.isArray(body.danger_signs)).toBe(true);
+    expect(body.danger_signs.some((c: { code: string }) => c.code === 'vaginal_bleeding')).toBe(true);
+    expect(body.capabilities.some((c: { code: string }) => c.code === 'caesarean_section')).toBe(true);
+  });
+});
+
 describe('sync pull', () => {
   it('requires authentication', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/sync/pull?client_id=dev1' });

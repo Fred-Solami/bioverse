@@ -11,3 +11,10 @@ coverage/
 # Step 3 FHIR conformance artifacts (generated in CI)
 fhir-samples/
 validator_cli.jar
+
+# PWA build/test artifacts
+dev-dist/
+dist/
+playwright-report/
+test-results/
+.playwright/
