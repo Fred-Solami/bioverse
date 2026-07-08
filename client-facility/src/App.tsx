@@ -1,16 +1,31 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
+import { RequireAuth } from './RequireAuth';
+import { useAuth } from './store/auth';
 
-// Route table. Auth guarding, referral creation, inbound queue and sync arrive
-// in later slices (see docs/PWA-PLAN.md); Slice 1 establishes the shell that
-// loads and navigates offline.
+// Route table. On mount we hydrate the session from IndexedDB (and refresh the
+// token if online). Referral creation, inbound queue and sync arrive in later
+// slices (docs/PWA-PLAN.md).
 export function App() {
+  const hydrate = useAuth((s) => s.hydrate);
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
+
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
+        <Route
+          path="/"
+          element={
+            <RequireAuth>
+              <Dashboard />
+            </RequireAuth>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -32,6 +32,9 @@ export default defineConfig({
       devOptions: { enabled: true },
     }),
   ],
+  // Force a single React instance — Vite's dep pre-bundling can otherwise load
+  // two copies (one optimized, one not) and trigger "invalid hook call".
+  resolve: { dedupe: ['react', 'react-dom'] },
   server: {
     // Dev: proxy API calls to the local server (see server/.env, port 3000).
     proxy: { '/api': 'http://localhost:3000' },
