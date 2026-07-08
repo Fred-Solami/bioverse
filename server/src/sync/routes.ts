@@ -1,6 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { pool } from '../db.js';
 import type { AuthUser } from '../auth/plugin.js';
+import { applyPushedEvent, type PushEvent } from './service.js';
+
+const MAX_PUSH = 200;
 
 // Offline sync (DESIGN.md §13). The append-only referral_events log IS the sync
 // unit: every change is an event with a client UUID and timestamps. Pull hands
@@ -35,6 +38,38 @@ function scopeClause(user: AuthUser, startIndex: number): { sql: string; params:
 }
 
 export async function syncRoutes(app: FastifyInstance): Promise<void> {
+  // POST /sync/push — replay a batch of events queued offline. Each event is
+  // applied independently and idempotently (on its client UUID); one rejection
+  // never blocks the rest. Returns a per-event accept/reject result the client
+  // uses to clear its queue or surface a conflict (DESIGN.md §13).
+  app.post<{ Body: { client_id?: string; events?: PushEvent[] } }>(
+    '/push',
+    {
+      preHandler: [app.authenticate],
+      config: { audit: { action: 'UPDATE', entityType: 'sync' } },
+    },
+    async (req, reply) => {
+      const user = req.authUser!;
+      const { client_id, events } = req.body ?? {};
+      if (!client_id) return reply.code(400).send({ error: 'client_id is required' });
+      if (!Array.isArray(events)) return reply.code(400).send({ error: 'events must be an array' });
+      if (events.length > MAX_PUSH) {
+        return reply.code(413).send({ error: `at most ${MAX_PUSH} events per push` });
+      }
+
+      const results = [];
+      for (const ev of events) {
+        results.push(await applyPushedEvent(ev, user));
+      }
+      const accepted = results.filter((r) => r.status === 'accepted').length;
+
+      req.auditContext = {
+        detail: { client_id, accepted, rejected: results.length - accepted },
+      };
+      return reply.send({ accepted, rejected: results.length - accepted, results });
+    },
+  );
+
   // GET /sync/pull?client_id=&since=&limit= — role-scoped event deltas.
   app.get<{ Querystring: PullQuery }>(
     '/pull',

@@ -532,6 +532,84 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     }
   });
 
+  it('replays offline-queued events via sync push, idempotently', async () => {
+    // Simulate a device that created a referral and matched it while offline:
+    // it generated the referral id and event ids locally.
+    const referralId = randomUUID();
+    const batch = {
+      client_id: 'devA',
+      events: [
+        {
+          event_id: randomUUID(),
+          kind: 'CREATE',
+          referral_id: referralId,
+          occurred_at: new Date().toISOString(),
+          referral: {
+            patient_id: patientId,
+            reason: 'Referral created in airplane mode',
+            priority: 'URGENT',
+            danger_signs: ['convulsions'],
+          },
+        },
+        {
+          event_id: randomUUID(),
+          kind: 'TRANSITION',
+          referral_id: referralId,
+          to_status: 'MATCHED',
+          to_facility_id: staffB.facilityId,
+          occurred_at: new Date().toISOString(),
+        },
+      ],
+    };
+
+    const push1 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/sync/push',
+      headers: auth(staffA),
+      payload: batch,
+    });
+    expect(push1.statusCode, push1.body).toBe(200);
+    expect(push1.json()).toMatchObject({ accepted: 2, rejected: 0 });
+
+    // The referral now exists server-side, already matched.
+    const timeline = await app.inject({
+      method: 'GET',
+      url: `/api/v1/referrals/${referralId}`,
+      headers: auth(staffA),
+    });
+    expect(timeline.statusCode).toBe(200);
+    expect(timeline.json().referral.current_status).toBe('MATCHED');
+    expect(timeline.json().events).toHaveLength(2);
+
+    // Re-pushing the same batch (flaky connection) is idempotent — no dup events.
+    const push2 = await app.inject({
+      method: 'POST',
+      url: '/api/v1/sync/push',
+      headers: auth(staffA),
+      payload: batch,
+    });
+    expect(push2.json().accepted).toBe(2);
+    const timeline2 = await app.inject({
+      method: 'GET',
+      url: `/api/v1/referrals/${referralId}`,
+      headers: auth(staffA),
+    });
+    expect(timeline2.json().events).toHaveLength(2);
+
+    // An illegal transition is rejected per-event, with a reason, not a 500.
+    const bad = await app.inject({
+      method: 'POST',
+      url: '/api/v1/sync/push',
+      headers: auth(staffA),
+      payload: {
+        client_id: 'devA',
+        events: [{ event_id: randomUUID(), kind: 'TRANSITION', referral_id: referralId, to_status: 'CLOSED' }],
+      },
+    });
+    expect(bad.json()).toMatchObject({ accepted: 0, rejected: 1 });
+    expect(bad.json().results[0].reason).toContain('illegal');
+  });
+
   it('rotates refresh tokens and revokes on logout', async () => {
     const refreshed = await app.inject({
       method: 'POST',
