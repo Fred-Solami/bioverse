@@ -113,6 +113,22 @@ describe('identity review queue RBAC', () => {
   });
 });
 
+describe('sync pull', () => {
+  it('requires authentication', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/sync/pull?client_id=dev1' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('requires a client_id', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/sync/pull',
+      headers: auth({ role: 'FACILITY_STAFF' }),
+    });
+    expect(res.statusCode).toBe(400);
+  });
+});
+
 describe('transition validation', () => {
   it('rejects an invalid to_status before touching the DB', async () => {
     const res = await app.inject({

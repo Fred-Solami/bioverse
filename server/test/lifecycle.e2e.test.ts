@@ -491,6 +491,47 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     expect(again.statusCode).toBe(409);
   });
 
+  it('delivers role-scoped event deltas via sync pull', async () => {
+    const pull1 = await app.inject({
+      method: 'GET',
+      url: `/api/v1/sync/pull?client_id=devA&since=0`,
+      headers: auth(staffA),
+    });
+    expect(pull1.statusCode).toBe(200);
+    const body = pull1.json();
+    expect(body.count).toBeGreaterThan(0);
+    // Every delivered event belongs to a referral touching staffA's facility.
+    for (const e of body.events) {
+      expect(e.from_facility_id === staffA.facilityId || e.to_facility_id === staffA.facilityId).toBe(true);
+    }
+
+    // The cursor advanced; re-pulling from it yields nothing new...
+    const pull2 = await app.inject({
+      method: 'GET',
+      url: `/api/v1/sync/pull?client_id=devA&since=${body.cursor}`,
+      headers: auth(staffA),
+    });
+    expect(pull2.json().count).toBe(0);
+
+    // ...and resuming with no `since` uses the stored cursor (also nothing new).
+    const pull3 = await app.inject({
+      method: 'GET',
+      url: '/api/v1/sync/pull?client_id=devA',
+      headers: auth(staffA),
+    });
+    expect(pull3.json().count).toBe(0);
+
+    // A different facility's device only sees its own scoped deltas.
+    const pullB = await app.inject({
+      method: 'GET',
+      url: `/api/v1/sync/pull?client_id=devB&since=0`,
+      headers: auth(staffB),
+    });
+    for (const e of pullB.json().events) {
+      expect(e.from_facility_id === staffB.facilityId || e.to_facility_id === staffB.facilityId).toBe(true);
+    }
+  });
+
   it('rotates refresh tokens and revokes on logout', async () => {
     const refreshed = await app.inject({
       method: 'POST',

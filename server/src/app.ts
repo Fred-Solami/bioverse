@@ -8,6 +8,7 @@ import { registryRoutes } from './registry/routes.js';
 import { identityRoutes, reviewQueueRoutes } from './identity/routes.js';
 import { referralRoutes } from './referrals/routes.js';
 import { alertRoutes } from './alerts/routes.js';
+import { syncRoutes } from './sync/routes.js';
 
 export interface BuildOptions {
   logger?: boolean;
@@ -44,6 +45,7 @@ export async function buildApp(opts: BuildOptions = {}): Promise<FastifyInstance
   await app.register(reviewQueueRoutes, { prefix: '/api/v1/identity' });
   await app.register(referralRoutes, { prefix: '/api/v1/referrals' });
   await app.register(alertRoutes, { prefix: '/api/v1/alerts' });
+  await app.register(syncRoutes, { prefix: '/api/v1/sync' });
 
   return app;
 }

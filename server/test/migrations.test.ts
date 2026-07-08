@@ -28,6 +28,7 @@ describe('migrations', () => {
       '0009_facility_external_ids.sql', // interop: MFL cross-system ids + provenance
       '0010_alerts.sql', // v0.2 escalation alerts
       '0011_patient_links.sql', // v0.2 reversible identity links
+      '0012_sync_seq.sql', // v0.3 monotonic sync cursor
     ]);
   });
 
