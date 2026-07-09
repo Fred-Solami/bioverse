@@ -69,6 +69,41 @@ into local `referrals`; the new referral shows in "my outbound" immediately.
 (persisted in IndexedDB).
 **Exit:** a referral can be created with the network off.
 
+#### Slice 3 — detailed implementation
+
+Build order (each testable; commit per group):
+
+1. **Terminology cache** — `api.getTerminology()` → cache in IndexedDB `meta`
+   under `terminology`; a `useTerminology` hook reads cache-first, refreshes when
+   online. Drives the danger-sign checklist + capability chips. *Unit: cache
+   round-trip.*
+2. **Patient picker** — a referral needs a server-known `patient_id` (the CREATE
+   push does an FK insert), so patients are **searched online** (`POST
+   /patients/search`) and the chosen one is cached in the `patients` store;
+   offline, pick from cache. Scope per plan: no offline new-patient creation.
+   *Unit: patient cache list/put.*
+3. **Local referral data layer** — `db/referrals.ts`: `queueCreate(input)` writes
+   a CREATE event to `outbox` **and** an optimistic projection to `referrals`
+   (status INITIATED, `sync:'pending'`, reference `PENDING`); `listReferrals()`.
+   A pure `buildCreateEvent(input, user)` maps form → PushEvent (validated,
+   UUIDs). *Unit: buildCreateEvent shape; queueCreate writes both stores.*
+4. **Referral form page** (`/referrals/new`) — patient picker, reason, priority
+   segmented control, danger-sign checklist, optional capability chips + clinical
+   summary. Submit → `queueCreate` → navigate to list. Works fully offline.
+5. **Outbound list** — dashboard reads `listReferrals()`; each row shows priority,
+   patient, status, and a **"Pending sync"** badge while `sync:'pending'`.
+   *(Actual push/pull is Slice 4; here the badge just reflects local state.)*
+
+Data shapes:
+- `outbox` event = the server `PushEvent` CREATE (client `event_id`,
+  `referral_id`, `referral{…}`).
+- `referrals` projection = `{ id, reference, patient_id, patient_name, priority,
+  reason, danger_signs, current_status, from_facility_id, created_at, sync }`.
+
+Verify: live (preview + local API) — search/pick a patient, create a referral
+offline (DevTools offline or stop API), see it listed with the pending badge,
+reload → still there. Playwright offline spec authored for Slice 6 CI.
+
 ### Slice 4 — Sync engine (the demo)
 Flush `outbox` via `/sync/push`; apply per-event results (clear accepted,
 flag rejected/conflicts). Pull deltas via `/sync/pull`; merge into local

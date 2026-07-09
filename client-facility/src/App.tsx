@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './Layout';
 import { Dashboard } from './pages/Dashboard';
+import { NewReferral } from './pages/NewReferral';
 import { Login } from './pages/Login';
 import { RequireAuth } from './RequireAuth';
 import { useAuth } from './store/auth';
@@ -23,6 +24,14 @@ export function App() {
           element={
             <RequireAuth>
               <Dashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/referrals/new"
+          element={
+            <RequireAuth>
+              <NewReferral />
             </RequireAuth>
           }
         />

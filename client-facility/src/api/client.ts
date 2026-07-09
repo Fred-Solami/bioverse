@@ -52,3 +52,49 @@ export async function logout(): Promise<void> {
     // Offline logout still clears local state; the server token expires on its own.
   }
 }
+
+// Authenticated request: attaches the in-memory access token.
+async function authFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const token = getToken();
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (init.body) headers['content-type'] = 'application/json';
+  return fetch(`${BASE}${path}`, { ...init, credentials: 'include', headers });
+}
+
+export interface Concept {
+  code: string;
+  display: string;
+}
+export interface Terminology {
+  systems: Record<string, string>;
+  danger_signs: Concept[];
+  capabilities: Concept[];
+}
+
+export async function getTerminology(): Promise<Terminology> {
+  const res = await authFetch('/terminology');
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return res.json();
+}
+
+export interface PatientHit {
+  id: string;
+  given_name: string;
+  family_name: string;
+  sex?: string | null;
+  birth_date?: string | null;
+  district?: string | null;
+}
+
+export async function searchPatients(query: {
+  name?: string;
+  identifier?: { id_type: string; id_value: string };
+}): Promise<PatientHit[]> {
+  const res = await authFetch('/patients/search', {
+    method: 'POST',
+    body: JSON.stringify(query),
+  });
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return (await res.json()).patients ?? [];
+}

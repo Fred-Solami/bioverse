@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../store/auth';
-import { useOnline } from '../hooks/useOnline';
+import { listLocalReferrals, type LocalReferral } from '../data/referrals';
 
 const ROLE_LABELS: Record<string, string> = {
   CHW: 'Community health worker',
@@ -12,7 +14,11 @@ const ROLE_LABELS: Record<string, string> = {
 export function Dashboard() {
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
-  const online = useOnline();
+  const [referrals, setReferrals] = useState<LocalReferral[] | null>(null);
+
+  useEffect(() => {
+    void listLocalReferrals().then(setReferrals);
+  }, []);
 
   return (
     <section>
@@ -20,7 +26,7 @@ export function Dashboard() {
         <div>
           <h1>Referrals</h1>
           <p className="muted">
-            Signed in as <strong>{user?.username ?? user?.sub}</strong>
+            {user?.username ?? user?.sub}
             {user?.role ? ` · ${ROLE_LABELS[user.role] ?? user.role}` : ''}
           </p>
         </div>
@@ -29,14 +35,38 @@ export function Dashboard() {
         </button>
       </div>
 
-      <div className="card empty-state" data-testid="dashboard-ready">
-        <p className="empty-title">No referrals yet</p>
-        <p className="muted">
-          {online
-            ? 'Creating a referral arrives in the next slice. Changes will sync as you make them.'
-            : 'Working offline — anything you create is saved on this device and syncs when you reconnect.'}
-        </p>
-      </div>
+      <Link to="/referrals/new" className="btn btn-primary btn-block" data-testid="new-referral">
+        + New referral
+      </Link>
+
+      {referrals === null ? null : referrals.length === 0 ? (
+        <div className="card empty-state" data-testid="dashboard-ready">
+          <p className="empty-title">No referrals yet</p>
+          <p className="muted">Create one — it's saved on this device and syncs when you're online.</p>
+        </div>
+      ) : (
+        <ul className="ref-list" data-testid="referral-list">
+          {referrals.map((r) => (
+            <li key={r.id} className="card ref-row">
+              <div className="ref-main">
+                <span className={`pri pri-${r.priority.toLowerCase()}`}>{r.priority}</span>
+                <div>
+                  <div className="ref-patient">{r.patient_name}</div>
+                  <div className="muted ref-reason">{r.reason}</div>
+                </div>
+              </div>
+              <div className="ref-meta">
+                <span className="status">{r.current_status}</span>
+                {r.sync === 'pending' && (
+                  <span className="badge badge-pending" data-testid="pending-badge">
+                    Pending sync
+                  </span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

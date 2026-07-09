@@ -9,14 +9,14 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "tsx src/index.ts",
+    "dev": "tsx --env-file=.env src/index.ts",
     "build": "tsc",
-    "migrate": "tsx src/migrate.ts",
-    "seed": "tsx src/seed.ts",
-    "seed:users": "tsx src/seedUsers.ts",
-    "seed:mfl": "tsx src/interop/zhfr/seedFromMfl.ts",
+    "migrate": "tsx --env-file=.env src/migrate.ts",
+    "seed": "tsx --env-file=.env src/seed.ts",
+    "seed:users": "tsx --env-file=.env src/seedUsers.ts",
+    "seed:mfl": "tsx --env-file=.env src/interop/zhfr/seedFromMfl.ts",
     "fhir:samples": "tsx src/interop/fhir/emitSamples.ts",
-    "escalate": "tsx src/referrals/escalationWorker.ts",
+    "escalate": "tsx --env-file=.env src/referrals/escalationWorker.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
