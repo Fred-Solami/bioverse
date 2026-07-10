@@ -13,7 +13,7 @@ export interface CreateReferralInput {
   clinical_summary?: string;
 }
 
-// The CREATE event queued in the outbox — shape matches the server's PushEvent
+// The CREATE event queued in the outbox; shape matches the server's PushEvent
 // (server/src/sync/service.ts), so the sync engine (Slice 4) replays it as-is.
 export interface CreateEvent {
   event_id: string;

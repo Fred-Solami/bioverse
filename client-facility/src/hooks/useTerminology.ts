@@ -21,7 +21,7 @@ export function useTerminology(): Terminology | null {
         await setMeta(CACHE_KEY, fresh);
         if (alive) setTerminology(fresh);
       } catch {
-        // Offline or unauthorized — the cached value (if any) stands.
+        // Offline or unauthorized; the cached value (if any) stands.
       }
     })();
     return () => {

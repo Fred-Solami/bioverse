@@ -33,7 +33,7 @@ export function NewReferral() {
     setError(null);
     if (!patient) return setError('Select a patient.');
     if (reason.trim().length < 3) return setError('Enter a reason for referral.');
-    if (!user) return setError('Session expired — sign in again.');
+    if (!user) return setError('Session expired. Sign in again.');
 
     setBusy(true);
     try {
@@ -68,7 +68,7 @@ export function NewReferral() {
 
       {!online && (
         <p className="offline-banner" data-testid="offline-banner">
-          Offline — this referral is saved on the device and syncs when you reconnect.
+          Offline. This referral is saved on the device and syncs when you reconnect.
         </p>
       )}
 

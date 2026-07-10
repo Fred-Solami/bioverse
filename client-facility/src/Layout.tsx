@@ -3,7 +3,7 @@ import { useOnline } from './hooks/useOnline';
 
 // App shell: header + connectivity badge, rendered around every route. The
 // badge is the user's constant signal of whether work is queuing locally or
-// syncing — the single most important affordance in an offline-first field app.
+// syncing; the single most important affordance in an offline-first field app.
 export function Layout() {
   const online = useOnline();
   return (

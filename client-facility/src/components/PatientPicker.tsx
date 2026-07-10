@@ -56,7 +56,7 @@ export function PatientPicker({
         setResults(hits as CachedPatient[]);
         if (hits.length === 0) setNote('No matches on the server.');
       } catch {
-        setNote('Search failed — showing patients saved on this device.');
+        setNote('Search failed. Showing patients saved on this device.');
         setResults(filterCached(q));
       } finally {
         setBusy(false);
@@ -64,7 +64,7 @@ export function PatientPicker({
     } else {
       const local = filterCached(q);
       setResults(local);
-      if (local.length === 0) setNote('Offline — no matching patient saved on this device.');
+      if (local.length === 0) setNote('Offline. No matching patient saved on this device.');
     }
   }
 

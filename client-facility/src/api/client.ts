@@ -1,8 +1,8 @@
 import type { SessionUser } from '../types';
 
 // Thin API client. The refresh token rides in an HttpOnly cookie
-// (credentials:'include'); the short-lived access token stays in memory only —
-// never in IndexedDB — so a stolen device database yields no live credential.
+// (credentials:'include'); the short-lived access token stays in memory only,
+// never in IndexedDB, so a stolen device database yields no live credential.
 const BASE = '/api/v1';
 
 let accessToken: string | null = null;

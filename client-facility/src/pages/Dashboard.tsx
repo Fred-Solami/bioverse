@@ -42,7 +42,7 @@ export function Dashboard() {
       {referrals === null ? null : referrals.length === 0 ? (
         <div className="card empty-state" data-testid="dashboard-ready">
           <p className="empty-title">No referrals yet</p>
-          <p className="muted">Create one — it's saved on this device and syncs when you're online.</p>
+          <p className="muted">Create one. It's saved on this device and syncs when you're online.</p>
         </div>
       ) : (
         <ul className="ref-list" data-testid="referral-list">

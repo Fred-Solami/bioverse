@@ -15,7 +15,7 @@ const user: SessionUser = {
 const input = {
   patient_id: 'p1',
   patient_name: 'Chanda Mwansa',
-  reason: '  PPH — bleeding  ',
+  reason: '  PPH, bleeding  ',
   priority: 'EMERGENCY' as const,
   danger_signs: ['vaginal_bleeding'],
   required_capabilities: ['blood_transfusion'],
@@ -32,7 +32,7 @@ describe('buildCreateEvent', () => {
     expect(ev.referral).toMatchObject({
       patient_id: 'p1',
       from_facility_id: 'fac-1',
-      reason: 'PPH — bleeding', // trimmed
+      reason: 'PPH, bleeding', // trimmed
       priority: 'EMERGENCY',
       pathway: 'MATERNAL',
       danger_signs: ['vaginal_bleeding'],
