@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { pool } from '../db.js';
 import type { AuthUser } from '../auth/plugin.js';
 import { rankTransport, type TransportOption } from './dispatch.js';
+import { checkTransition, type Status } from '../referrals/stateMachine.js';
 
 // Transport coordination endpoints, mounted under /api/v1/referrals. The
 // referral's DISPATCHED/IN_TRANSIT phase already exists in the state machine and
@@ -86,7 +87,19 @@ export async function transportRoutes(app: FastifyInstance): Promise<void> {
       try {
         await client.query('BEGIN');
 
-        // Reject a second assignment for slice 1 (re-dispatch comes later).
+        // Lock the referral: dispatching transport IS the DISPATCHED transition,
+        // so it must be currently MATCHED (a destination is chosen).
+        const { rows: rrows } = await client.query<{
+          current_status: Status;
+          from_facility_id: string;
+          to_facility_id: string | null;
+        }>(
+          `SELECT current_status, from_facility_id, to_facility_id
+             FROM referrals WHERE id = $1 FOR UPDATE`,
+          [req.params.id],
+        );
+        const referral = rrows[0]!;
+
         const existing = await client.query(
           `SELECT 1 FROM referral_transport WHERE referral_id = $1`,
           [req.params.id],
@@ -94,6 +107,23 @@ export async function transportRoutes(app: FastifyInstance): Promise<void> {
         if (existing.rows[0]) {
           await client.query('ROLLBACK');
           return reply.code(409).send({ error: 'transport already assigned' });
+        }
+
+        // Validate MATCHED -> DISPATCHED against the state machine (role + status).
+        const check = checkTransition(
+          referral.current_status,
+          'DISPATCHED',
+          { role: user.role, facilityId: user.facilityId },
+          { fromFacilityId: referral.from_facility_id, toFacilityId: referral.to_facility_id },
+          undefined,
+        );
+        if (!check.ok) {
+          await client.query('ROLLBACK');
+          const msg =
+            referral.current_status !== 'MATCHED'
+              ? 'referral must be MATCHED (destination chosen) before dispatching transport'
+              : check.error;
+          return reply.code(check.code).send({ error: msg });
         }
 
         // Claim the vehicle only if still available (guards against a race).
@@ -123,10 +153,27 @@ export async function transportRoutes(app: FastifyInstance): Promise<void> {
             user.sub,
           ],
         );
+
+        // Advance the referral to DISPATCHED and append the event, so transport
+        // and referral status stay in lockstep and the transit-delay escalation
+        // (which keys off the DISPATCHED event) starts ticking.
+        await client.query(
+          `INSERT INTO referral_events
+             (id, referral_id, from_status, to_status, actor_user_id, actor_facility_id, note, payload, occurred_at)
+           VALUES (gen_random_uuid(), $1, $2, 'DISPATCHED', $3, $4, 'Transport dispatched', $5, now())`,
+          [
+            req.params.id,
+            referral.current_status,
+            user.sub,
+            user.facilityId,
+            JSON.stringify({ transport_resource_id: b.resource_id, eta_minutes: b.eta_minutes ?? null }),
+          ],
+        );
+        await client.query(`UPDATE referrals SET current_status = 'DISPATCHED' WHERE id = $1`, [req.params.id]);
         await client.query('COMMIT');
 
-        req.auditContext = { entityId: req.params.id, detail: { transport: b.resource_id } };
-        return reply.code(201).send(rows[0]);
+        req.auditContext = { entityId: req.params.id, detail: { transport: b.resource_id, to: 'DISPATCHED' } };
+        return reply.code(201).send({ ...rows[0], referral_status: 'DISPATCHED' });
       } catch (err) {
         await client.query('ROLLBACK');
         throw err;

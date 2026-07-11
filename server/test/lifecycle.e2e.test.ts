@@ -625,6 +625,16 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     });
     const rid = create.json().referral.id;
 
+    // Transport can only be dispatched once a destination is chosen (MATCHED).
+    const noDest = await app.inject({
+      method: 'POST',
+      url: `/api/v1/referrals/${rid}/transport`,
+      headers: auth(staffA),
+      payload: { resource_id: '00000000-0000-0000-0000-0000000000ff' },
+    });
+    expect(noDest.statusCode).toBe(409);
+    await transition(staffA, rid, 'MATCHED', { to_facility_id: staffB.facilityId });
+
     // Nearest available vehicles, ranked.
     const options = await app.inject({
       method: 'GET',
@@ -647,6 +657,14 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     });
     expect(assign.statusCode, assign.body).toBe(201);
     expect(assign.json().status).toBe('DISPATCHED');
+
+    // Dispatching transport advanced the referral itself to DISPATCHED.
+    const ref = await app.inject({
+      method: 'GET',
+      url: `/api/v1/referrals/${rid}`,
+      headers: auth(staffA),
+    });
+    expect(ref.json().referral.current_status).toBe('DISPATCHED');
 
     // The current assignment reflects it.
     const current = await app.inject({
