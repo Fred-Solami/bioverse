@@ -15,6 +15,7 @@
     "seed": "tsx --env-file=.env src/seed.ts",
     "seed:users": "tsx --env-file=.env src/seedUsers.ts",
     "seed:patients": "tsx --env-file=.env src/seedPatients.ts",
+    "seed:transport": "tsx --env-file=.env src/seedTransport.ts",
     "seed:mfl": "tsx --env-file=.env src/interop/zhfr/seedFromMfl.ts",
     "fhir:samples": "tsx src/interop/fhir/emitSamples.ts",
     "escalate": "tsx --env-file=.env src/referrals/escalationWorker.ts",

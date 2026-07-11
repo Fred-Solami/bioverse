@@ -5,6 +5,7 @@ import { buildApp } from '../src/app.js';
 import { migrate } from '../src/migrate.js';
 import { seedFacilities } from '../src/seed.js';
 import { seedUsers } from '../src/seedUsers.js';
+import { seedTransport } from '../src/seedTransport.js';
 import { pool, closePool } from '../src/db.js';
 import { scanAndRaise } from '../src/referrals/escalationWorker.js';
 
@@ -91,6 +92,7 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     await migrate();
     await seedFacilities();
     await seedUsers();
+    await seedTransport();
     app = await buildApp({ logger: false });
     await app.ready();
 
@@ -608,6 +610,69 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     });
     expect(bad.json()).toMatchObject({ accepted: 0, rejected: 1 });
     expect(bad.json().results[0].reason).toContain('illegal');
+  });
+
+  it('coordinates transport: ranks nearest vehicle, assigns it, is idempotent', async () => {
+    const create = await app.inject({
+      method: 'POST',
+      url: '/api/v1/referrals',
+      headers: auth(staffA),
+      payload: {
+        patient_id: patientId,
+        reason: 'Obstructed labour, needs urgent transport',
+        priority: 'EMERGENCY',
+      },
+    });
+    const rid = create.json().referral.id;
+
+    // Nearest available vehicles, ranked.
+    const options = await app.inject({
+      method: 'GET',
+      url: `/api/v1/referrals/${rid}/transport/options`,
+      headers: auth(staffA),
+    });
+    expect(options.statusCode).toBe(200);
+    const body = options.json();
+    expect(body.count).toBeGreaterThan(0);
+    expect(body.options[0].recommended).toBe(true);
+    expect(typeof body.options[0].distance_m).toBe('number');
+    const vehicleId = body.options[0].id;
+
+    // Assign it.
+    const assign = await app.inject({
+      method: 'POST',
+      url: `/api/v1/referrals/${rid}/transport`,
+      headers: auth(staffA),
+      payload: { resource_id: vehicleId, driver_name: 'John Banda', eta_minutes: 35 },
+    });
+    expect(assign.statusCode, assign.body).toBe(201);
+    expect(assign.json().status).toBe('DISPATCHED');
+
+    // The current assignment reflects it.
+    const current = await app.inject({
+      method: 'GET',
+      url: `/api/v1/referrals/${rid}/transport`,
+      headers: auth(staffA),
+    });
+    expect(current.json().transport.status).toBe('DISPATCHED');
+    expect(current.json().transport.eta_minutes).toBe(35);
+
+    // The claimed vehicle drops out of the available options.
+    const after = await app.inject({
+      method: 'GET',
+      url: `/api/v1/referrals/${rid}/transport/options`,
+      headers: auth(staffA),
+    });
+    expect(after.json().options.some((o: { id: string }) => o.id === vehicleId)).toBe(false);
+
+    // A second assignment is rejected (re-dispatch is a later slice).
+    const again = await app.inject({
+      method: 'POST',
+      url: `/api/v1/referrals/${rid}/transport`,
+      headers: auth(staffA),
+      payload: { resource_id: vehicleId },
+    });
+    expect(again.statusCode).toBe(409);
   });
 
   it('rotates refresh tokens and revokes on logout', async () => {
