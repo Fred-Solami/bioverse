@@ -35,9 +35,14 @@ export function Dashboard() {
         </button>
       </div>
 
-      <Link to="/referrals/new" className="btn btn-primary btn-block" data-testid="new-referral">
-        + New referral
-      </Link>
+      <div className="dash-actions">
+        <Link to="/referrals/new" className="btn btn-primary" data-testid="new-referral">
+          + New referral
+        </Link>
+        <Link to="/dispatch" className="btn btn-ghost" data-testid="dispatch-link">
+          Dispatch
+        </Link>
+      </div>
 
       {referrals === null ? null : referrals.length === 0 ? (
         <div className="card empty-state" data-testid="dashboard-ready">

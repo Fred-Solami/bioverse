@@ -34,15 +34,26 @@ export async function login(username: string, password: string): Promise<AuthRes
   return res.json();
 }
 
-// Best-effort: exchange the refresh cookie for a fresh access token on app
-// start. Returns null when offline or the session has expired.
-export async function refresh(): Promise<AuthResponse | null> {
-  try {
-    const res = await fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' });
-    return res.ok ? await res.json() : null;
-  } catch {
-    return null;
-  }
+// Best-effort: exchange the refresh cookie for a fresh access token. Refresh
+// tokens ROTATE with reuse-detection on the server, so two concurrent refreshes
+// would present the same cookie and the second looks like token theft, burning
+// the whole session. We therefore dedupe: concurrent callers share one in-flight
+// refresh. Returns null when offline or the session has expired.
+let refreshInFlight: Promise<AuthResponse | null> | null = null;
+export function refresh(): Promise<AuthResponse | null> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' });
+      return res.ok ? ((await res.json()) as AuthResponse) : null;
+    } catch {
+      return null;
+    }
+  })();
+  void refreshInFlight.finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
 }
 
 export async function logout(): Promise<void> {
@@ -53,13 +64,23 @@ export async function logout(): Promise<void> {
   }
 }
 
-// Authenticated request: attaches the in-memory access token.
-async function authFetch(path: string, init: RequestInit = {}): Promise<Response> {
+// Authenticated request: attaches the in-memory access token. On a 401 (the
+// token hasn't loaded yet after a page refresh, or has expired) it silently
+// exchanges the refresh cookie for a new token and retries once.
+async function authFetch(path: string, init: RequestInit = {}, retry = true): Promise<Response> {
   const token = getToken();
   const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
   if (token) headers.Authorization = `Bearer ${token}`;
   if (init.body) headers['content-type'] = 'application/json';
-  return fetch(`${BASE}${path}`, { ...init, credentials: 'include', headers });
+  const res = await fetch(`${BASE}${path}`, { ...init, credentials: 'include', headers });
+  if (res.status === 401 && retry) {
+    const refreshed = await refresh();
+    if (refreshed) {
+      setToken(refreshed.accessToken);
+      return authFetch(path, init, false);
+    }
+  }
+  return res;
 }
 
 export interface Concept {
@@ -97,4 +118,49 @@ export async function searchPatients(query: {
   });
   if (!res.ok) throw new Error(await errorMessage(res));
   return (await res.json()).patients ?? [];
+}
+
+// --- Transport dispatch (online coordinator surface) ----------------------
+export interface ServerReferral {
+  id: string;
+  reference: string;
+  priority: string;
+  current_status: string;
+  from_facility_name: string;
+  to_facility_name: string | null;
+}
+
+export async function listReferrals(status?: string): Promise<ServerReferral[]> {
+  const q = status ? `?status=${encodeURIComponent(status)}` : '';
+  const res = await authFetch(`/referrals${q}`);
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return (await res.json()).referrals ?? [];
+}
+
+export interface TransportOption {
+  id: string;
+  name: string;
+  vehicle_type: string;
+  contact_phone: string | null;
+  district: string | null;
+  distance_m: number | null;
+  rank: number;
+  recommended: boolean;
+}
+
+export async function getTransportOptions(referralId: string): Promise<TransportOption[]> {
+  const res = await authFetch(`/referrals/${referralId}/transport/options`);
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return (await res.json()).options ?? [];
+}
+
+export async function assignTransport(
+  referralId: string,
+  body: { resource_id: string; driver_name?: string; eta_minutes?: number },
+): Promise<void> {
+  const res = await authFetch(`/referrals/${referralId}/transport`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await errorMessage(res));
 }

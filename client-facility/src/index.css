@@ -216,6 +216,28 @@ h1 {
   text-decoration: none;
   margin-bottom: 1rem;
 }
+.dash-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.dash-actions .btn-primary {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+}
+.dash-actions .btn-ghost {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+.vehicle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.8rem;
+}
 
 /* ---- Referral form ------------------------------------------------------ */
 .form .field:last-of-type {

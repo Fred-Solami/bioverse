@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './Layout';
 import { Dashboard } from './pages/Dashboard';
 import { NewReferral } from './pages/NewReferral';
+import { Dispatch } from './pages/Dispatch';
 import { Login } from './pages/Login';
 import { RequireAuth } from './RequireAuth';
 import { useAuth } from './store/auth';
@@ -32,6 +33,14 @@ export function App() {
           element={
             <RequireAuth>
               <NewReferral />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dispatch"
+          element={
+            <RequireAuth>
+              <Dispatch />
             </RequireAuth>
           }
         />
