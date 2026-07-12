@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../store/auth';
+import { useSync } from '../hooks/useSync';
 import { listLocalReferrals, type LocalReferral } from '../data/referrals';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -15,10 +16,12 @@ export function Dashboard() {
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
   const [referrals, setReferrals] = useState<LocalReferral[] | null>(null);
+  const { syncing, pending, version, lastError, trigger } = useSync(!!user);
 
+  // Re-read the local projection after every completed sync.
   useEffect(() => {
     void listLocalReferrals().then(setReferrals);
-  }, []);
+  }, [version]);
 
   return (
     <section>
@@ -42,7 +45,17 @@ export function Dashboard() {
         <Link to="/dispatch" className="btn btn-ghost" data-testid="dispatch-link">
           Dispatch
         </Link>
+        <button
+          className="btn btn-ghost"
+          onClick={() => void trigger()}
+          disabled={syncing}
+          data-testid="sync-now"
+        >
+          {syncing ? 'Syncing…' : pending > 0 ? `Sync (${pending})` : 'Sync'}
+        </button>
       </div>
+
+      {lastError && <p className="offline-banner">{lastError}</p>}
 
       {referrals === null ? null : referrals.length === 0 ? (
         <div className="card empty-state" data-testid="dashboard-ready">
@@ -57,7 +70,7 @@ export function Dashboard() {
                 <span className={`pri pri-${r.priority.toLowerCase()}`}>{r.priority}</span>
                 <div>
                   <div className="ref-patient">{r.patient_name}</div>
-                  <div className="muted ref-reason">{r.reason}</div>
+                  <div className="muted ref-reason">{r.reason || r.reference}</div>
                 </div>
               </div>
               <div className="ref-meta">
@@ -65,6 +78,11 @@ export function Dashboard() {
                 {r.sync === 'pending' && (
                   <span className="badge badge-pending" data-testid="pending-badge">
                     Pending sync
+                  </span>
+                )}
+                {r.sync === 'rejected' && (
+                  <span className="badge badge-rejected" data-testid="rejected-badge">
+                    Needs review
                   </span>
                 )}
               </div>

@@ -74,6 +74,16 @@ export async function addOutbox<T extends { event_id: string }>(event: T): Promi
 export async function listOutbox<T extends { event_id: string } = { event_id: string }>(): Promise<T[]> {
   return (await db()).getAll('outbox') as unknown as Promise<T[]>;
 }
+export async function removeOutbox(eventId: string): Promise<void> {
+  await (await db()).delete('outbox', eventId);
+}
+
+// --- referrals: single-row read (sync engine merges into the projection) ---
+export async function getReferral<T extends { id: string } = { id: string }>(
+  id: string,
+): Promise<T | undefined> {
+  return (await db()).get('referrals', id) as unknown as Promise<T | undefined>;
+}
 
 // --- referrals (local projection the UI reads from) -----------------------
 export async function putReferral<T extends { id: string }>(r: T): Promise<void> {

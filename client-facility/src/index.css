@@ -450,3 +450,7 @@ textarea.input {
   background: var(--amber-bg);
   color: var(--amber);
 }
+.badge-rejected {
+  background: var(--danger-bg);
+  color: var(--danger);
+}

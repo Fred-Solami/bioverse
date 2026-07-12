@@ -164,3 +164,46 @@ export async function assignTransport(
   });
   if (!res.ok) throw new Error(await errorMessage(res));
 }
+
+// --- Sync (outbox push + delta pull) --------------------------------------
+export interface PushResult {
+  event_id: string;
+  status: 'accepted' | 'rejected';
+  referral_id?: string;
+  reference?: string;
+  reason?: string;
+}
+
+export async function pushEvents(
+  clientId: string,
+  events: unknown[],
+): Promise<{ accepted: number; rejected: number; results: PushResult[] }> {
+  const res = await authFetch('/sync/push', {
+    method: 'POST',
+    body: JSON.stringify({ client_id: clientId, events }),
+  });
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return res.json();
+}
+
+export interface PullEvent {
+  seq: string;
+  referral_id: string;
+  reference: string;
+  current_status: string;
+  priority: string;
+  patient_id: string;
+  to_status: string;
+  occurred_at: string;
+}
+
+export async function pullEvents(
+  clientId: string,
+  since: string,
+): Promise<{ cursor: string; count: number; events: PullEvent[] }> {
+  const res = await authFetch(
+    `/sync/pull?client_id=${encodeURIComponent(clientId)}&since=${encodeURIComponent(since)}`,
+  );
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return res.json();
+}
