@@ -693,6 +693,22 @@ describe.runIf(run)('v0.1 lifecycle (live database)', () => {
     expect(again.statusCode).toBe(409);
   });
 
+  it('reports coordination KPIs computed from the event log', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/metrics',
+      headers: auth(admin),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().scope).toBe('system');
+    const k = res.json().kpis;
+    expect(k.total).toBeGreaterThan(0);
+    // The full-lifecycle test closed a referral with feedback returned, so
+    // closure is computable and non-zero, and an acknowledgement time exists.
+    expect(k.feedback_closure_rate).toBeGreaterThan(0);
+    expect(k.acknowledgement_time.count).toBeGreaterThan(0);
+  });
+
   it('rotates refresh tokens and revokes on logout', async () => {
     const refreshed = await app.inject({
       method: 'POST',

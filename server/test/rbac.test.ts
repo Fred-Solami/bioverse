@@ -113,6 +113,13 @@ describe('identity review queue RBAC', () => {
   });
 });
 
+describe('metrics endpoint', () => {
+  it('requires authentication', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/v1/metrics' });
+    expect(res.statusCode).toBe(401);
+  });
+});
+
 describe('terminology endpoint', () => {
   it('requires authentication', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/terminology' });

@@ -11,6 +11,7 @@ import { transportRoutes } from './transport/routes.js';
 import { alertRoutes } from './alerts/routes.js';
 import { syncRoutes } from './sync/routes.js';
 import { terminologyRoutes } from './terminology/routes.js';
+import { metricsRoutes } from './metrics/routes.js';
 
 export interface BuildOptions {
   logger?: boolean;
@@ -50,6 +51,7 @@ export async function buildApp(opts: BuildOptions = {}): Promise<FastifyInstance
   await app.register(alertRoutes, { prefix: '/api/v1/alerts' });
   await app.register(syncRoutes, { prefix: '/api/v1/sync' });
   await app.register(terminologyRoutes, { prefix: '/api/v1/terminology' });
+  await app.register(metricsRoutes, { prefix: '/api/v1/metrics' });
 
   return app;
 }
