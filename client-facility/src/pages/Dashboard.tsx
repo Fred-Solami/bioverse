@@ -42,6 +42,9 @@ export function Dashboard() {
         <Link to="/referrals/new" className="btn btn-primary" data-testid="new-referral">
           + New referral
         </Link>
+        <Link to="/inbound" className="btn btn-ghost" data-testid="inbound-link">
+          Inbound
+        </Link>
         <Link to="/dispatch" className="btn btn-ghost" data-testid="dispatch-link">
           Dispatch
         </Link>
