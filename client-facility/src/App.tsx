@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard';
 import { NewReferral } from './pages/NewReferral';
 import { Dispatch } from './pages/Dispatch';
 import { Inbound } from './pages/Inbound';
+import { ReferralDetail } from './pages/ReferralDetail';
 import { Login } from './pages/Login';
 import { RequireAuth } from './RequireAuth';
 import { useAuth } from './store/auth';
@@ -50,6 +51,14 @@ export function App() {
           element={
             <RequireAuth>
               <Inbound />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/referrals/:id"
+          element={
+            <RequireAuth>
+              <ReferralDetail />
             </RequireAuth>
           }
         />

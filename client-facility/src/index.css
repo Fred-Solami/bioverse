@@ -454,3 +454,67 @@ textarea.input {
   background: var(--danger-bg);
   color: var(--danger);
 }
+
+/* ---- Referral detail ---------------------------------------------------- */
+.detail-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.detail-status {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.detail-reason {
+  flex-basis: 100%;
+  margin: 0.4rem 0 0;
+}
+.action-card {
+  margin-bottom: 1.25rem;
+}
+.action-card .field {
+  margin-bottom: 0.9rem;
+}
+.timeline-head {
+  font-size: 1.05rem;
+  margin: 0 0 0.75rem;
+}
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tl-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 0 0.9rem;
+  position: relative;
+}
+.tl-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1.1rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.tl-dot {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--teal);
+  margin-top: 0.25rem;
+}
+.tl-status {
+  font-weight: 600;
+}
+.tl-note {
+  font-size: 0.9rem;
+}
+.tl-time {
+  font-size: 0.78rem;
+}
