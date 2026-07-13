@@ -120,12 +120,14 @@ export async function searchPatients(query: {
   return (await res.json()).patients ?? [];
 }
 
-// --- Transport dispatch (online coordinator surface) ----------------------
+// --- Referrals (server view: dispatch, inbound queue, detail) -------------
 export interface ServerReferral {
   id: string;
   reference: string;
   priority: string;
   current_status: string;
+  from_facility_id: string;
+  to_facility_id: string | null;
   from_facility_name: string;
   to_facility_name: string | null;
 }
@@ -135,6 +137,23 @@ export async function listReferrals(status?: string): Promise<ServerReferral[]> 
   const res = await authFetch(`/referrals${q}`);
   if (!res.ok) throw new Error(await errorMessage(res));
   return (await res.json()).referrals ?? [];
+}
+
+export interface ReferralEvent {
+  to_status: string;
+  from_status: string | null;
+  note: string | null;
+  occurred_at: string;
+}
+export interface ReferralDetail {
+  referral: ServerReferral & { patient_id: string; reason: string; danger_signs: string[] };
+  events: ReferralEvent[];
+}
+
+export async function getReferralDetail(id: string): Promise<ReferralDetail> {
+  const res = await authFetch(`/referrals/${id}`);
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return res.json();
 }
 
 export interface TransportOption {
