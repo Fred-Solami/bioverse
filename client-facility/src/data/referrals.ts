@@ -1,4 +1,4 @@
-import { addOutbox, putReferral, getAllReferrals } from '../db/store';
+import { addOutbox, putReferral, getAllReferrals, getReferral } from '../db/store';
 import type { SessionUser } from '../types';
 
 export type Priority = 'EMERGENCY' | 'URGENT' | 'ROUTINE';
@@ -99,4 +99,52 @@ export async function queueCreate(
 export async function listLocalReferrals(): Promise<LocalReferral[]> {
   const rows = await getAllReferrals<LocalReferral>();
   return rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+// A lifecycle transition queued offline (RECEIVED / TREATED / FEEDBACK_RETURNED
+// on an inbound referral, or DISPATCHED / CANCELLED on an outbound one). Shape
+// matches the server's PushEvent so the sync engine replays it unchanged.
+export interface TransitionEvent {
+  event_id: string;
+  kind: 'TRANSITION';
+  referral_id: string;
+  occurred_at: string;
+  to_status: string;
+  note?: string;
+  payload?: Record<string, unknown>;
+}
+
+export interface TransitionOptions {
+  note?: string;
+  payload?: Record<string, unknown>;
+}
+
+export function buildTransitionEvent(
+  referralId: string,
+  toStatus: string,
+  opts: TransitionOptions = {},
+): TransitionEvent {
+  return {
+    event_id: crypto.randomUUID(),
+    kind: 'TRANSITION',
+    referral_id: referralId,
+    occurred_at: new Date().toISOString(),
+    to_status: toStatus,
+    note: opts.note?.trim() || undefined,
+    payload: opts.payload,
+  };
+}
+
+// Queue the transition and optimistically advance the local projection so the
+// UI reflects it immediately, syncing when the connection returns.
+export async function queueTransition(
+  referralId: string,
+  toStatus: string,
+  opts: TransitionOptions = {},
+): Promise<void> {
+  await addOutbox(buildTransitionEvent(referralId, toStatus, opts));
+  const local = await getReferral<LocalReferral>(referralId);
+  if (local) {
+    await putReferral<LocalReferral>({ ...local, current_status: toStatus, sync: 'pending' });
+  }
 }
