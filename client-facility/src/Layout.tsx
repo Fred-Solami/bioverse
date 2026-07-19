@@ -1,5 +1,6 @@
 import { Outlet, Link } from 'react-router-dom';
 import { useOnline } from './hooks/useOnline';
+import { UpdatePrompt } from './components/UpdatePrompt';
 
 // App shell: header + connectivity badge, rendered around every route. The
 // badge is the user's constant signal of whether work is queuing locally or
@@ -20,6 +21,7 @@ export function Layout() {
           {online ? 'Online' : 'Offline'}
         </span>
       </header>
+      <UpdatePrompt />
       <main className="app-main">
         <Outlet />
       </main>

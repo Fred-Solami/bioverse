@@ -4,14 +4,20 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // Offline-first PWA (DESIGN.md §13). vite-plugin-pwa (Workbox) precaches the
 // built app shell so the app *loads* with no network; the outbox/sync engine
-// (later slices) handle data offline. injectRegister:'auto' wires up service
-// worker registration without touching app code.
+// handles data offline.
+//
+// Updates are PROMPTED, not automatic. With autoUpdate + skipWaiting a new
+// worker takes over live tabs mid-session: the running page keeps executing the
+// old JS while the new precache serves new assets, so lazy chunks from the old
+// build 404 (the classic stale-shell failure). In a clinical field app that can
+// break a half-finished referral. Instead the new worker stays in `waiting`
+// until the user accepts (see components/UpdatePrompt.tsx).
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      registerType: 'prompt',
+      injectRegister: null,
       manifest: {
         name: 'BioVerse Facility',
         short_name: 'BioVerse',
@@ -24,10 +30,12 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
         navigateFallback: '/index.html',
-        // Take control of the page on first load so an immediate offline reload
-        // is already served from cache (no second visit required).
+        // Claim uncontrolled clients on FIRST install so an immediate offline
+        // reload is already served from cache (no second visit required).
         clientsClaim: true,
-        skipWaiting: true,
+        // But never displace an already-running worker: an update waits for the
+        // user. UpdatePrompt calls updateServiceWorker(true) to skip waiting.
+        skipWaiting: false,
       },
       devOptions: { enabled: true },
     }),

@@ -256,6 +256,44 @@ textarea.input {
   margin: 0 0 1rem;
 }
 
+/* Service-worker update prompt (Slice 6). Sits under the header, full width,
+   so it is noticed without covering content or interrupting a form. */
+.update-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.update-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.update-btn,
+.update-dismiss {
+  min-height: 32px;
+  padding: 0 0.7rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.update-btn {
+  border: 1px solid var(--line);
+  background: var(--ink);
+  color: #fff;
+}
+.update-dismiss {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+}
+
 /* Segmented priority control */
 .segmented {
   display: flex;
